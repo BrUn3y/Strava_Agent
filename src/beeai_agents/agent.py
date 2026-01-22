@@ -1,219 +1,343 @@
+"""
+Strava Agent with AgentStack and A2A support
+Provides conversational access to Strava API through A2A protocol
+"""
+
 import os
 import asyncio
-from dotenv import load_dotenv
-from typing import List
+from collections.abc import AsyncGenerator
 
-# Updated imports from BeeAI SDK for Python (v0.1.68+)
+from a2a.types import AgentSkill, Message
+from a2a.utils.message import get_message_text
+from agentstack_sdk.server import Server
+from agentstack_sdk.server.context import RunContext
+from agentstack_sdk.a2a.types import AgentMessage
+from agentstack_sdk.a2a.extensions import AgentDetail, AgentDetailTool
+from agentstack_sdk.server.store.platform_context_store import PlatformContextStore
+
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.adapters.watsonx import WatsonxChatModel
 from beeai_framework.backend.types import ChatModelParameters
-from beeai_framework.tools import Tool
+# Gemini option (quota exceeded)
+# from beeai_framework.backend import ChatModel
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 
-# Import custom Strava tools
 from beeai_agents.strava_custom_tools import create_strava_tools
+
+from dotenv import load_dotenv
 
 load_dotenv()
 
+# Agent Instructions
+INSTRUCTIONS = """You are a helpful Strava AI assistant with access to comprehensive Strava API tools.
 
-class StravaAgent:
-    """
-    Complete AI agent to interact with the Strava API using custom tools.
-    Provides intelligent analysis of activities, statistics, segments, and more.
-    """
-    
-    def __init__(self, model_id: str = "meta-llama/llama-3-3-70b-instruct"):
-        """
-        Initialize the Strava agent.
-        
-        Args:
-            model_id: LLM model ID to use (default: meta-llama/llama-3-3-70b-instruct)
-        """
-        self.agent = None
-        self.model_id = model_id
-        self.tools: List[Tool] = []
-        
-    async def initialize(self):
-        """
-        Initialize the agent with the LLM and custom Strava tools.
-        """
-        print("🚀 Initializing Strava Agent with custom tools...")
-        
-        try:
-            # 1. Configure the LLM with optimized parameters for ReAct
-            print(f"📡 Connecting to model: {self.model_id}")
-            
-            # Optimized parameters for better adherence to ReAct format
-            llm_params = ChatModelParameters(
-                temperature=0.0,  # More deterministic to follow format
-                max_tokens=2048,
-                top_p=0.95,
-                top_k=50
-            )
-            
-            llm = WatsonxChatModel(
-                model_id=self.model_id,
-                parameters=llm_params
-            )
+Your capabilities include:
+1. **Activities**: Get recent activities, detailed activity information, laps, zones, and data streams
+2. **Profile & Stats**: Access athlete profile and statistics (total and recent)
+3. **Segments**: Explore segments, get details, and view leaderboards
+4. **Clubs**: List clubs, get club details, activities, and members
+5. **Routes**: Access saved routes and route details
 
-            # 2. Create custom Strava tools
-            print("🔧 Creating custom Strava tools...")
-            self.tools = create_strava_tools()
-            print(f"✅ {len(self.tools)} custom tools created")
-            
-            # 3. Initialize the ReAct Agent with custom tools
-            self.agent = ReActAgent(
-                llm=llm,
-                memory=UnconstrainedMemory(),
-                tools=self.tools  # type: ignore
-            )
-            
-            print("✅ Agent initialized successfully\n")
-            
-        except Exception as e:
-            print(f"❌ Error initializing agent: {e}")
-            import traceback
-            traceback.print_exc()
-            raise
-    
-    async def run(self, query: str) -> str:
-        """
-        Execute a query on the agent.
-        
-        Args:
-            query: User question or command
-            
-        Returns:
-            str: Agent response
-        """
-        if not self.agent:
-            await self.initialize()
-        
-        if not self.agent:
-            raise RuntimeError("Agent could not be initialized")
-        
-        print(f"🤖 User: {query}\n")
-        print("🤔 Processing...\n")
-        
-        try:
-            response = await self.agent.run(query)
-            
-            # Extract text from response
-            result = ""
-            try:
-                result = response.last_message.text
-            except AttributeError:
-                result = str(response)
-            
-            print("\n🐝 BeeAI Agent responds:")
-            print("=" * 80)
-            print(result)
-            print("=" * 80)
-            
-            return result
-            
-        except Exception as e:
-            error_msg = f"❌ Error processing query: {e}"
-            print(error_msg)
-            
-            # Provide useful error information
-            if "LinePrefixParserError" in str(e) or "does not adhere to the schema" in str(e):
-                print("\n💡 SUGGESTION: The LLM model is not following the ReAct format correctly.")
-                print("   Possible solutions:")
-                print("   1. Use a more powerful model (e.g., meta-llama/llama-3-1-70b-instruct)")
-                print("   2. Simplify your query to be more direct")
-                print("   3. Try a more specific query\n")
-            
-            import traceback
-            traceback.print_exc()
-            return error_msg
-    
-    async def cleanup(self):
-        """
-        Clean up agent resources.
-        """
-        print("\n🧹 Cleaning up resources...")
-        # Custom tools don't need special cleanup
-        print("✅ Resources released")
+**CRITICAL RULES - MUST FOLLOW:**
 
+1. **ONLY call tools that match the user's request:**
+   - User asks for "profile" → use GetAthleteProfile
+   - User asks for "activity", "run", "workout", "route", "map" → use GetActivityById or GetActivities
+   - User asks for "stats" → use GetAthleteStats
+   - DO NOT call GetAthleteProfile when user asks about activities
 
-# --- USAGE EXAMPLES ---
-async def example_queries():
-    """
-    Examples of queries you can make to the agent.
-    """
-    agent = StravaAgent()
-    
-    queries = [
-        # Activity analysis
-        "Show me my last 5 activities with their main statistics",
-        
-        # Personal statistics
-        "What are my total cycling statistics this year?",
-        
-        # Performance analysis
-        "Analyze my progress in the last 10 runs. Have I improved my pace?",
-        
-        # Profile information
-        "What is my current profile?",
-        
-        # Comparisons
-        "Compare my most recent activity with my best time from last month",
-    ]
-    
-    print("📚 EXAMPLE QUERIES YOU CAN MAKE:\n")
-    for i, query in enumerate(queries, 1):
-        print(f"{i}. {query}")
-    print("\n" + "=" * 80 + "\n")
+2. **MARKDOWN IMAGE FORMAT - EXTREMELY IMPORTANT:**
+   When a tool returns a map URL or image URL, you MUST format it as Markdown image:
+   
+   ✅ CORRECT FORMAT:
+   ![Route Map](https://maps.googleapis.com/maps/api/staticmap?...)
+   
+   ❌ WRONG - DO NOT DO THIS:
+   The map is available [here](https://maps.googleapis.com/...)
+   
+   ✅ CORRECT EXAMPLE:
+   "Tu medio maratón del 2 de noviembre:
+   
+   ![Route Map](https://maps.googleapis.com/maps/api/staticmap?size=600x400&path=enc:q{d}Bn|bvR...&key=...)
+   
+   - Distancia: 31.02 km
+   - Tiempo: 174 minutos"
+   
+   The ![...](...) syntax makes the image render in the UI. Links [here](...) do NOT render images.
+
+3. **PRESERVE TOOL OUTPUT IMAGES:**
+   If a tool returns ![Photo](URL) or ![Map](URL), copy it EXACTLY to your response.
+   DO NOT convert it to a link or plain text.
+
+When responding:
+- Be conversational and friendly in Spanish
+- ALWAYS use ![...](...) format for images, NEVER use [text](url) for images
+- Provide clear, structured information
+- Use emojis (🏃, 🚴, 📊, 🗺️)
+- Format numbers appropriately (km, minutes, etc.)
+- ONLY show images relevant to the user's question
+
+Remember: ![Image](url) renders an image, [link](url) does not!"""
+
+# Agent Detail for A2A
+AGENT_DETAIL = AgentDetail(
+    interaction_mode="multi-turn",
+    user_greeting="Hello! I'm your Strava AI assistant. I can help you analyze your activities, explore segments, check your stats, and much more! 🏃‍♂️🚴‍♀️",
+    version="1.0.0",
+    framework="BeeAI",
+    author={"name": "Edgar Bruney"},
+    tools=[
+        AgentDetailTool(name="GetAthleteProfile", description="Get authenticated athlete's complete profile"),
+        AgentDetailTool(name="GetActivities", description="Get recent activities with filters"),
+        AgentDetailTool(name="GetActivityById", description="Get complete details of a specific activity"),
+        AgentDetailTool(name="GetAthleteStats", description="Get total and recent athlete statistics"),
+        AgentDetailTool(name="GetActivityZones", description="Get heart rate or power zone distribution"),
+        AgentDetailTool(name="GetActivityLaps", description="Get laps/splits of an activity"),
+        AgentDetailTool(name="GetActivityStreams", description="Get point-by-point GPS, HR, power data"),
+        AgentDetailTool(name="ExploreSegments", description="Find segments in a geographic area"),
+        AgentDetailTool(name="GetSegmentById", description="Get detailed segment information"),
+        AgentDetailTool(name="GetSegmentLeaderboard", description="Get segment leaderboard rankings"),
+        AgentDetailTool(name="GetAthleteClubs", description="Get clubs the athlete belongs to"),
+        AgentDetailTool(name="GetClubById", description="Get detailed club information"),
+        AgentDetailTool(name="GetClubActivities", description="Get recent club activities"),
+        AgentDetailTool(name="GetClubMembers", description="Get club member list"),
+        AgentDetailTool(name="GetRouteById", description="Get detailed route information"),
+        AgentDetailTool(name="GetAthleteRoutes", description="Get athlete's saved routes"),
+    ],
+)
+
+# Agent Skills for A2A
+AGENT_SKILLS = [
+    AgentSkill(
+        id="strava-activities",
+        name="Activity Analysis",
+        description="Analyze your Strava activities, get detailed stats, compare performances, and track progress",
+        tags=["Activities", "Stats", "Analysis"],
+        examples=[
+            "Show me my last 10 activities",
+            "Get details of activity 12345678",
+            "What were my activities from last week?",
+            "Compare my last 3 runs",
+        ]
+    ),
+    AgentSkill(
+        id="strava-segments",
+        name="Segment Explorer",
+        description="Explore segments, view leaderboards, and find challenging routes in your area",
+        tags=["Segments", "Leaderboards", "Exploration"],
+        examples=[
+            "Find cycling segments near coordinates 37.8,-122.4",
+            "Show me the leaderboard for segment 12345",
+            "What segments are popular in my area?",
+        ]
+    ),
+    AgentSkill(
+        id="strava-stats",
+        name="Statistics & Profile",
+        description="Access your profile, training zones, and comprehensive statistics",
+        tags=["Profile", "Statistics", "Zones"],
+        examples=[
+            "What's my current profile?",
+            "Show me my total cycling statistics",
+            "What are my heart rate zones?",
+        ]
+    ),
+    AgentSkill(
+        id="strava-clubs",
+        name="Club Management",
+        description="View your clubs, club activities, and member information",
+        tags=["Clubs", "Community", "Social"],
+        examples=[
+            "What clubs do I belong to?",
+            "Show me recent activities from my club",
+            "Who are the members of club 12345?",
+        ]
+    ),
+    AgentSkill(
+        id="strava-routes",
+        name="Route Planning",
+        description="Access and analyze your saved routes",
+        tags=["Routes", "Planning", "Navigation"],
+        examples=[
+            "Show me my saved routes",
+            "Get details about route 67890",
+            "What's the elevation profile of my favorite route?",
+        ]
+    ),
+]
+
+# Initialize AgentStack server
+server = Server()
 
 
-# --- MAIN FUNCTION ---
-async def main():
+def create_strava_agent(model_id: str = "meta-llama/llama-3-3-70b-instruct"):
     """
-    Main function that runs the Strava agent.
-    """
-    print("\n" + "=" * 80)
-    print("🏃‍♂️ STRAVA AGENT WITH BEEAI (CUSTOM TOOLS) 🚴‍♀️")
-    print("=" * 80 + "\n")
+    Create a Strava ReAct agent with custom tools.
     
-    agent = StravaAgent()
+    Args:
+        model_id: LLM model ID to use
+            - Default: "meta-llama/llama-3-3-70b-instruct" (IBM Watsonx - Active)
+            - Alternative: "ibm/granite-3-8b-instruct", "meta-llama/llama-3-1-70b-instruct"
+            - Gemini (quota exceeded): "gemini:gemini-2.0-flash-exp"
+        
+    Returns:
+        Configured ReActAgent instance
+    """
+    # Configure LLM with optimized parameters
+    llm_params = ChatModelParameters(
+        temperature=0.0,  # More deterministic for better tool usage
+        max_tokens=2048,
+        top_p=0.95,
+        top_k=50
+    )
+    
+    # Option 1: IBM Watsonx (Active)
+    # Requires: WATSONX_API_KEY, WATSONX_PROJECT_ID, WATSONX_URL in .env
+    llm = WatsonxChatModel(
+        model_id=model_id,
+        parameters=llm_params
+    )
+    
+    # Option 2: Google Gemini (Quota exceeded - commented out)
+    # Requires: GEMINI_API_KEY in .env
+    # from beeai_framework.backend import ChatModel
+    # llm = ChatModel.from_name(
+    #     "gemini:gemini-2.0-flash-exp",
+    #     parameters=llm_params
+    # )
+    
+    # Create custom Strava tools
+    tools = create_strava_tools()
+    
+    # Initialize ReAct agent
+    agent = ReActAgent(
+        llm=llm,
+        memory=UnconstrainedMemory(),
+        tools=tools  # type: ignore
+    )
+    
+    return agent
+
+
+@server.agent(
+    name="Strava Agent",
+    default_input_modes=["text"],
+    default_output_modes=["text"],
+    detail=AGENT_DETAIL,
+    skills=AGENT_SKILLS
+)
+async def strava_a2a_agent(input: Message, context: RunContext) -> AsyncGenerator[AgentMessage, None]:
+    """
+    A2A-compatible Strava agent endpoint with session history support.
+    
+    Analyzes Strava activities, explores segments, views statistics, manages clubs, and plans routes.
+    Maintains conversation context across multiple turns.
+    
+    Args:
+        input: A2A Message from user
+        context: Run context from AgentStack (includes session history)
+        
+    Yields:
+        AgentMessage responses
+    """
+    # Store incoming message in session history
+    await context.store(input)
+    
+    # Extract user query from A2A message
+    user_query = get_message_text(input)
+    print(f"🏃 Strava Agent received query: '{user_query}'")
+    
+    # Load conversation history for context
+    # This allows the agent to reference previous messages
+    history = [msg async for msg in context.load_history() if isinstance(msg, Message)]
+    print(f"📚 Loaded {len(history)} messages from history")
+    
+    # Create agent instance
+    agent = create_strava_agent()
     
     try:
-        await agent.initialize()
+        # Run agent with the current query
+        # The agent can use its own memory for tool usage context
+        response = await agent.run(user_query)
         
-        # Example query - you can change it to any other
-        user_query = "Compare my last 3 runs and tell me if I'm improving"
+        print("✅ Strava Agent finished processing")
         
-        await agent.run(user_query)
+        # Extract final answer
+        try:
+            final_answer = response.last_message.text
+        except AttributeError:
+            final_answer = str(response)
         
-        # Uncomment to see examples of other queries
-        # await example_queries()
+        # Extract images from tool outputs and add them to the response
+        # This ensures images are preserved even if the LLM removes them
+        import re
+        tool_outputs = []
+        if hasattr(response, 'iterations'):
+            for iteration in response.iterations:
+                if hasattr(iteration, 'state') and hasattr(iteration.state, 'tool_output'):
+                    if iteration.state.tool_output:
+                        tool_outputs.append(str(iteration.state.tool_output))
         
-    except KeyboardInterrupt:
-        print("\n\n⚠️  Interrupted by user")
+        # Find all Markdown images in tool outputs
+        images_found = []
+        for output in tool_outputs:
+            images = re.findall(r'!\[([^\]]*)\]\(([^\)]+)\)', output)
+            images_found.extend(images)
+        
+        # If images were found in tools but not in final answer, prepend them
+        if images_found and '![' not in final_answer:
+            print(f"📸 Found {len(images_found)} images in tool outputs, adding to response")
+            image_markdown = '\n'.join([f'![{alt}]({url})' for alt, url in images_found])
+            final_answer = f"{image_markdown}\n\n{final_answer}"
+        
+        # Create response message
+        agent_msg = AgentMessage(text=final_answer)
+        
+        # Yield response to user
+        yield agent_msg
+        
+        # Store agent response in session history
+        await context.store(agent_msg)
+        
     except Exception as e:
-        print(f"\n❌ Fatal error: {e}")
+        error_message = f"❌ Error processing Strava query: {str(e)}\n\nPlease try rephrasing your question or check if you have valid Strava credentials configured."
+        print(f"Error details: {e}")
         import traceback
         traceback.print_exc()
-    finally:
-        await agent.cleanup()
+        
+        # Create and store error message
+        error_msg = AgentMessage(text=error_message)
+        yield error_msg
+        await context.store(error_msg)
 
 
 def run():
     """
-    Entry point for the server script.
+    Start the AgentStack server with Strava agent.
     """
+    host = os.getenv("HOST", "127.0.0.1")
+    port = int(os.getenv("PORT", 8000))
+    
+    print("\n" + "=" * 80)
+    print("🏃‍♂️ STRAVA AGENT WITH AGENTSTACK & A2A 🚴‍♀️")
+    print("=" * 80)
+    print(f"\n🚀 Starting server on {host}:{port}")
+    print(f"📡 A2A endpoint: http://{host}:{port}/a2a")
+    print(f"📊 Health check: http://{host}:{port}/health")
+    print("\n💡 Available skills:")
+    for skill in AGENT_SKILLS:
+        print(f"   • {skill.name}: {skill.description}")
+    print("\n" + "=" * 80 + "\n")
+    
     try:
-        asyncio.run(main())
+        server.run(host=host, port=port, context_store=PlatformContextStore())
     except KeyboardInterrupt:
-        print("\n👋 See you later!")
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        import traceback
-        traceback.print_exc()
+        pass
 
 
 if __name__ == "__main__":
     run()
 
 # Made with Bob
+

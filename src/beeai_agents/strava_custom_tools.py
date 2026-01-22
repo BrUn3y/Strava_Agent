@@ -246,8 +246,16 @@ No parameters required."""
             response.raise_for_status()
             data = response.json()
             
-            result = f"""Athlete Profile:
-- Name: {data.get('firstname', '')} {data.get('lastname', '')}
+            # Build result with Markdown image syntax directly
+            result = "Athlete Profile:\n\n"
+            
+            # Add profile photo as Markdown image if available
+            if data.get('profile'):
+                result += f"![Profile Photo]({data.get('profile')})\n\n"
+            elif data.get('profile_medium'):
+                result += f"![Profile Photo]({data.get('profile_medium')})\n\n"
+            
+            result += f"""- Name: {data.get('firstname', '')} {data.get('lastname', '')}
 - Username: {data.get('username', 'N/A')}
 - ID: {data.get('id')}
 - City: {data.get('city', 'N/A')}, {data.get('country', 'N/A')}
@@ -378,7 +386,19 @@ Returns: detailed information including splits, zones, segments, etc."""
             time_min = activity.get('moving_time', 0) / 60
             
             result = f"""Activity Details:
-- Name: {activity.get('name', 'Unnamed')}
+
+"""
+            
+            # Add map image if polyline is available and Google Maps key is set
+            map_data = activity.get('map', {})
+            polyline = map_data.get('polyline', '')
+            google_maps_key = os.getenv('GOOGLE_MAPS_API_KEY', '')
+            
+            if polyline and google_maps_key:
+                map_url = f"https://maps.googleapis.com/maps/api/staticmap?size=600x400&path=enc:{polyline}&key={google_maps_key}"
+                result += f"![Route Map]({map_url})\n\n"
+            
+            result += f"""- Name: {activity.get('name', 'Unnamed')}
 - Type: {activity.get('type', 'N/A')}
 - Description: {activity.get('description', 'No description')}
 - Distance: {distance_km:.2f} km
