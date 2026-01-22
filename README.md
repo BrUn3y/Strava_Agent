@@ -81,10 +81,14 @@ dependencies = [
 
 The agent uses the following BeeAI tools:
 
-- **Custom Tools:** Direct implementation of Strava API
+- **Custom Tools:** Direct implementation of Strava API (16 tools)
+- **Think Tool:** 🆕 Enhanced reasoning for complex analysis
+- **Python Tool:** 🆕 Data analysis and visualizations (optional)
 - **ReActAgent:** Reasoning and action agent
 - **UnconstrainedMemory:** Unrestricted memory for full context
 - **WatsonxChatModel:** IBM Granite language model
+
+📖 **For advanced tools setup and usage, see [ADVANCED_TOOLS_GUIDE.md](ADVANCED_TOOLS_GUIDE.md)**
 
 ## 🚀 Installation
 
@@ -111,7 +115,7 @@ Create a `.env` file in the project root with your credentials:
 # IBM Watsonx (or your LLM provider)
 WATSONX_API_KEY=your_api_key
 WATSONX_PROJECT_ID=your_project_id
-WATSONX_URL=https://us-south.ml.cloud.ibm.com/ml/v1/text/chat?version=2023-05-29
+WATSONX_URL=https://us-south.ml.cloud.ibm.com/ml/........
 
 # Strava API
 STRAVA_CLIENT_ID=your_client_id
@@ -168,138 +172,132 @@ curl -X POST http://127.0.0.1:8000/a2a \
 
 📖 **For complete A2A documentation, see [A2A_USAGE.md](A2A_USAGE.md)**
 
-## 📝 Example Queries
+## 📝 Example Queries - Maximize Your Agent's Potential
 
-### 🏃 Activities
+The agent now includes **Think Tool** for complex reasoning and **Python Tool** for data analysis and visualizations. Here are examples organized by complexity level:
 
-**Basic Queries:**
+### 📊 Level 1: Basic Queries (Strava Tools Only)
+
+**Activities:**
 ```
-"Show me my last 10 activities"
+"Show me my last 10 activities in a table"
+"Give me complete details of my last run"
 "What were my activities from last week?"
-"List my 5 most recent workouts"
-```
-
-**Detailed Analysis:**
-```
-"Give me complete details of activity 12345678"
-"Analyze my most recent run in detail"
-"Show me the splits and zones for my last cycling activity"
-```
-
-**Comparisons:**
-```
-"Compare my last 3 runs and tell me if I'm improving"
-"What's the difference between my fastest and slowest run this month?"
-```
-
-**Data Streams:**
-```
-"Get the GPS and heart rate data from activity 12345678"
-"Show me the power data from my last cycling workout"
-"What was my heart rate throughout my most recent run?"
-```
-
-### 👤 Profile & Statistics
-
-**Profile:**
-```
-"What's my current profile?"
-"Show me my athlete information"
 ```
 
 **Statistics:**
 ```
-"What are my total running statistics?"
-"Show me my cycling stats for this year"
+"Show my total running statistics"
 "What's my biggest ride distance?"
+"Display my cycling stats for this year"
 ```
 
-**Training Zones:**
+### 🧠 Level 2: Smart Analysis (Think Tool)
+
+**Comparisons:**
 ```
-"What are my heart rate zones?"
-"Show me my power zones"
-"What zones did I train in during my last activity?"
+"Compare my last 5 runs and tell me if I'm improving my pace"
+"Analyze my training consistency over the last 4 weeks"
+"What patterns do you see in my workouts? Do I train more on weekdays or weekends?"
 ```
 
-### 🗺️ Segments
-
-**Exploration:**
+**Performance Analysis:**
 ```
-"Find cycling segments near coordinates 37.8,-122.4"
-"Explore running segments in my area"
-```
-
-**Details:**
-```
-"Give me details about segment 12345"
-"What's the elevation profile of segment 67890?"
-```
-
-**Leaderboards:**
-```
-"Show me the leaderboard for segment 12345"
-"Who has the fastest time on segment 67890?"
-"What's my ranking on this segment?"
-```
-
-### 🚴 Routes
-
-```
-"Show me my saved routes"
-"List all my cycling routes"
-"Give me details about route 12345"
-"What's the elevation gain on route 67890?"
-```
-
-### 👥 Clubs
-
-**Information:**
-```
-"What clubs do I belong to?"
-"Show me details about club 12345"
-```
-
-**Activities:**
-```
-"What are the recent activities in my club?"
-"Show me what my club members have been doing"
-```
-
-**Members:**
-```
-"Who are the members of club 12345?"
-"Show me the most active members of my club"
-```
-
-### 🎯 Complex Analysis
-
-**Performance:**
-```
+"Compare my performance in morning runs vs evening runs"
 "Analyze my running performance over the last month"
-"Am I improving my cycling speed?"
-"Compare my heart rate across my recent activities"
+"How does my heart rate vary across different activity types?"
 ```
 
-**Training Insights:**
+### 🐍 Level 3: Advanced Analysis (Python Tool)
+
+**Visualizations:**
 ```
-"How much time have I spent in each heart rate zone this month?"
-"What's my training volume for the last 4 weeks?"
-"Am I training more or less than last month?"
+"Create a chart showing my pace improvement over the last 30 days"
+"Generate a bar chart of my weekly mileage for the last month"
+"Show me a histogram of my heart rate zone distribution"
+```
+
+**Statistical Analysis:**
+```
+"Calculate the correlation between my distance and average heart rate"
+"Compare statistically my 5km runs vs 10km runs: pace, HR, and cadence"
+"Analyze how my performance varies by day of the week with graphs"
+```
+
+### 🎯 Level 4: Multi-Dimensional Analysis
+
+**Progress Tracking:**
+```
+"Analyze my progress over the last 3 months: create tables and charts showing
+evolution of distance, pace, and heart rate"
+
+"Calculate my training efficiency: relationship between distance, time, and
+heart rate in my last 20 runs"
+```
+
+**Zone Analysis:**
+```
+"Show which HR zones I've trained in most this month and create a visualization"
+"Analyze my training load distribution and show if I'm at risk of overtraining"
+```
+
+### 🏆 Level 5: Predictive Analysis
+
+**Predictions:**
+```
+"Based on my progress over the last 2 months, predict when I could run 10km
+in under 45 minutes"
+
+"Analyze all my data and recommend the best training plan to improve my
+half marathon time"
+```
+
+**Optimization:**
+```
+"Analyze the time between my workouts and how it affects my performance"
+"Calculate my weekly training load and show if I'm in the optimal range"
+```
+
+### 💡 Tips for Powerful Prompts
+
+**✅ Effective Prompt Structure:**
+```
+[Action] + [Specific Data] + [Time Period] + [Format] + [Analysis]
+
+Example:
+"Compare my last 15 runs from the last month in a table and chart
+and tell me if I'm improving"
+```
+
+**Best Practices:**
+1. **Be specific with time:** "last 2 weeks" vs "my runs"
+2. **Request visualizations:** "with charts and tables"
+3. **Combine metrics:** "pace, HR, and cadence"
+4. **Ask for analysis:** "and tell me what I should improve"
+
+### 🎓 Use Case Examples
+
+**Preparing for a Race:**
+```
+"Analyze my last 3 months of training and tell me if I'm ready for a half marathon.
+Show progress tables, trend charts, and give specific recommendations."
+```
+
+**Identifying Issues:**
+```
+"Compare my runs from this month with last month. Identify any performance
+decline and suggest possible causes with data and charts."
 ```
 
 **Goal Tracking:**
 ```
-"How close am I to 100km of running this month?"
-"What's my total distance this year?"
-"Am I on track to reach my monthly distance goal?"
+"My goal is to run 200km this month. Show my current progress in a table and chart,
+calculate how much I need to run per week to achieve it."
 ```
 
-### 💡 Tips for Better Queries
+### 📚 More Examples
 
-- ✅ **Be Specific**: "Show me my last 5 cycling activities with heart rate data"
-- ✅ **Use IDs**: "Get details for activity 12345678"
-- ✅ **Combine Info**: "Compare my last 3 runs and show me if my pace is improving"
-- ✅ **Request Specific Data**: "Get GPS, heart rate, and power streams from activity 12345678"
+For 50+ detailed examples with expected outputs, see **[EXAMPLE_PROMPTS.md](EXAMPLE_PROMPTS.md)**
 
 ## 🔧 Strava API - Available Endpoints
 
@@ -597,6 +595,8 @@ For a detailed troubleshooting guide, see [TROUBLESHOOTING.md](TROUBLESHOOTING.m
 - [Strava Getting Started Guide](https://developers.strava.com/docs/getting-started/)
 - [API Coverage Analysis](STRAVA_API_COVERAGE.md) - Detailed comparison with official API
 - [A2A Usage Guide](A2A_USAGE.md) - Complete A2A protocol documentation
+- [Advanced Tools Guide](ADVANCED_TOOLS_GUIDE.md) - 🆕 Think & Python tools setup and usage
+- [Example Prompts](EXAMPLE_PROMPTS.md) - 🆕 Powerful prompts to maximize agent capabilities
 - [Troubleshooting Guide](TROUBLESHOOTING.md) - Common issues and solutions
 
 ### Visual Resources 🖼️

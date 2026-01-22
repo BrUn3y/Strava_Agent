@@ -20,16 +20,17 @@ class StravaVisualFormatter:
         self.mapbox_token = os.getenv("MAPBOX_ACCESS_TOKEN", "")
     
     def format_profile_with_photo(self, profile: Dict[str, Any]) -> str:
-        """Format athlete profile with photo."""
-        photo_url = profile.get('profile', '')
+        """Format athlete profile without photo (privacy setting)."""
+        # Note: Photo display disabled for privacy
         
         response = f"""## 👤 Your Strava Profile
 
 """
         
-        # Add photo if available
-        if photo_url:
-            response += f"![Profile Photo]({photo_url})\n\n"
+        # Photo display disabled for privacy
+        # photo_url = profile.get('profile', '')
+        # if photo_url:
+        #     response += f"![Profile Photo]({photo_url})\n\n"
         
         response += f"""**Name:** {profile.get('firstname', '')} {profile.get('lastname', '')}
 **Username:** @{profile.get('username', 'N/A')}

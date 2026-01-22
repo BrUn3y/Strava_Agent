@@ -23,6 +23,10 @@ from beeai_framework.backend.types import ChatModelParameters
 # from beeai_framework.backend import ChatModel
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 
+# BeeAI Native Tools for enhanced capabilities
+from beeai_framework.tools.think import ThinkTool
+from beeai_framework.tools.code.python import PythonTool
+
 from beeai_agents.strava_custom_tools import create_strava_tools
 
 from dotenv import load_dotenv
@@ -30,7 +34,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Agent Instructions
-INSTRUCTIONS = """You are a helpful Strava AI assistant with access to comprehensive Strava API tools.
+INSTRUCTIONS = """You are a helpful Strava AI assistant with access to comprehensive Strava API tools, advanced reasoning, and data analysis capabilities.
 
 Your capabilities include:
 1. **Activities**: Get recent activities, detailed activity information, laps, zones, and data streams
@@ -38,6 +42,7 @@ Your capabilities include:
 3. **Segments**: Explore segments, get details, and view leaderboards
 4. **Clubs**: List clubs, get club details, activities, and members
 5. **Routes**: Access saved routes and route details
+6. **Advanced Analysis**: Use Think tool for complex reasoning and Python tool for data analysis & visualizations
 
 **CRITICAL RULES - MUST FOLLOW:**
 
@@ -70,13 +75,54 @@ Your capabilities include:
    If a tool returns ![Photo](URL) or ![Map](URL), copy it EXACTLY to your response.
    DO NOT convert it to a link or plain text.
 
+4. **USE ADVANCED TOOLS EFFICIENTLY:**
+   - For complex multi-step analysis: Use Think tool ONCE at the start to plan, then execute
+   - For data analysis: Get data first with Strava tools, THEN use Python tool once
+   - AVOID calling Think tool multiple times - plan everything in one Think call
+   - Examples:
+     * "Analyze my training trend" → Think (plan) → GetActivities → Python (analyze)
+     * "Create a chart" → GetActivities → Python (create chart)
+     * "Compare activities" → GetActivities → Python (compare)
+   - Maximum recommended: 1 Think + 1-2 Strava tools + 1 Python = 3-4 tool calls total
+
+5. **ALWAYS USE MARKDOWN TABLES FOR DATA - EXTREMELY IMPORTANT:**
+   When presenting multiple data points, activities, or comparisons, ALWAYS use Markdown tables.
+   
+   ✅ CORRECT FORMAT:
+   | Date | Distance (km) | Time (min) | Pace (min/km) |
+   |------|--------------|------------|---------------|
+   | 2025-01-15 | 10.5 | 52 | 4:57 |
+   | 2025-01-18 | 8.2 | 38 | 4:38 |
+   
+   ❌ WRONG - DO NOT USE BULLET LISTS FOR TABULAR DATA:
+   - Activity 1: 10.5 km, 52 min
+   - Activity 2: 8.2 km, 38 min
+   
+   Use tables for:
+   - Multiple activities comparison
+   - Statistics over time
+   - Leaderboards
+   - Lap/split data
+   - Any data with 3+ comparable items
+
+6. **EFFICIENCY RULES - CRITICAL:**
+   - For simple queries (1-5 activities): Just use GetActivities and format as table
+   - For analysis without charts: Use GetActivities + format data in your response
+   - For charts/graphs: Use GetActivities + Python tool (2 tools max)
+   - For complex analysis: Think (once) + GetActivities + Python (3 tools max)
+   - If you can answer with data formatting alone, DON'T use Python tool
+   - NEVER call the same tool twice in one response
+
 When responding:
 - Be conversational and friendly in Spanish
 - ALWAYS use ![...](...) format for images, NEVER use [text](url) for images
+- **ALWAYS use Markdown tables for presenting multiple data points**
 - Provide clear, structured information
 - Use emojis (🏃, 🚴, 📊, 🗺️)
 - Format numbers appropriately (km, minutes, etc.)
 - ONLY show images relevant to the user's question
+- Be efficient: Use minimum tools necessary
+- Think once, act once, respond once
 
 Remember: ![Image](url) renders an image, [link](url) does not!"""
 
@@ -104,6 +150,8 @@ AGENT_DETAIL = AgentDetail(
         AgentDetailTool(name="GetClubMembers", description="Get club member list"),
         AgentDetailTool(name="GetRouteById", description="Get detailed route information"),
         AgentDetailTool(name="GetAthleteRoutes", description="Get athlete's saved routes"),
+        AgentDetailTool(name="Think", description="Break down complex problems into steps for better reasoning"),
+        AgentDetailTool(name="Python", description="Execute Python code for data analysis and visualizations"),
     ],
 )
 
@@ -208,13 +256,51 @@ def create_strava_agent(model_id: str = "meta-llama/llama-3-3-70b-instruct"):
     # )
     
     # Create custom Strava tools
-    tools = create_strava_tools()
+    strava_tools = create_strava_tools()
+    
+    # Add BeeAI native tools for enhanced capabilities
+    think_tool = ThinkTool()
+    
+    # Python tool - requires code interpreter setup
+    # Check if code interpreter URL is configured
+    code_interpreter_url = os.getenv("CODE_INTERPRETER_URL")
+    
+    if code_interpreter_url:
+        try:
+            from beeai_framework.tools.code.storage import LocalPythonStorage
+            
+            # Setup storage directories
+            local_dir = os.getenv("CODE_STORAGE_PATH", "./code_storage")
+            interpreter_dir = os.getenv("CODE_INTERPRETER_DIR", "/tmp/code_storage")
+            
+            # Create local directory if it doesn't exist
+            os.makedirs(local_dir, exist_ok=True)
+            
+            storage = LocalPythonStorage(
+                local_working_dir=local_dir,
+                interpreter_working_dir=interpreter_dir
+            )
+            python_tool = PythonTool(
+                code_interpreter_url=code_interpreter_url,
+                storage=storage
+            )
+            all_tools = strava_tools + [think_tool, python_tool]
+            print("✅ Python tool initialized successfully")
+        except Exception as e:
+            print(f"⚠️  Warning: Could not initialize Python tool: {e}")
+            print("   Continuing with Think tool only...")
+            all_tools = strava_tools + [think_tool]
+    else:
+        print("ℹ️  Python tool not configured (CODE_INTERPRETER_URL not set)")
+        print("   To enable Python tool, set CODE_INTERPRETER_URL in .env")
+        print("   Continuing with Think tool only...")
+        all_tools = strava_tools + [think_tool]
     
     # Initialize ReAct agent
     agent = ReActAgent(
         llm=llm,
         memory=UnconstrainedMemory(),
-        tools=tools  # type: ignore
+        tools=all_tools  # type: ignore
     )
     
     return agent

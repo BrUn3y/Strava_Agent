@@ -249,11 +249,11 @@ No parameters required."""
             # Build result with Markdown image syntax directly
             result = "Athlete Profile:\n\n"
             
-            # Add profile photo as Markdown image if available
-            if data.get('profile'):
-                result += f"![Profile Photo]({data.get('profile')})\n\n"
-            elif data.get('profile_medium'):
-                result += f"![Profile Photo]({data.get('profile_medium')})\n\n"
+            # Profile photo display disabled for privacy
+            # if data.get('profile'):
+            #     result += f"![Profile Photo]({data.get('profile')})\n\n"
+            # elif data.get('profile_medium'):
+            #     result += f"![Profile Photo]({data.get('profile_medium')})\n\n"
             
             result += f"""- Name: {data.get('firstname', '')} {data.get('lastname', '')}
 - Username: {data.get('username', 'N/A')}
