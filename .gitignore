@@ -91,6 +91,7 @@ Thumbs.db
 # Agent outputs and logs
 agent_output/
 agent_logs/
+code_storage/
 
 # Test outputs
 test_output/

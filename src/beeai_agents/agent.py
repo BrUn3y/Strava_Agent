@@ -16,16 +16,16 @@ from agentstack_sdk.a2a.extensions import AgentDetail, AgentDetailTool
 from agentstack_sdk.server.store.platform_context_store import PlatformContextStore
 
 from beeai_framework.agents.react import ReActAgent
+from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.adapters.watsonx import WatsonxChatModel
 from beeai_framework.backend.types import ChatModelParameters
-# Gemini option (quota exceeded)
-# from beeai_framework.backend import ChatModel
+# Gemini option
+from beeai_framework.backend import ChatModel
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 
 # BeeAI Native Tools for enhanced capabilities
 from beeai_framework.tools.think import ThinkTool
-from beeai_framework.tools.code.python import PythonTool
 
 from beeai_agents.strava_custom_tools import create_strava_tools
 
@@ -34,7 +34,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Agent Instructions
-INSTRUCTIONS = """You are a helpful Strava AI assistant with access to comprehensive Strava API tools, advanced reasoning, and data analysis capabilities.
+INSTRUCTIONS = """You are a helpful Strava AI assistant with access to comprehensive Strava API tools and advanced reasoning capabilities.
 
 Your capabilities include:
 1. **Activities**: Get recent activities, detailed activity information, laps, zones, and data streams
@@ -42,48 +42,44 @@ Your capabilities include:
 3. **Segments**: Explore segments, get details, and view leaderboards
 4. **Clubs**: List clubs, get club details, activities, and members
 5. **Routes**: Access saved routes and route details
-6. **Advanced Analysis**: Use Think tool for complex reasoning and Python tool for data analysis & visualizations
+6. **Advanced Analysis**: Use Think tool for complex reasoning
 
 **CRITICAL RULES - MUST FOLLOW:**
 
-1. **ONLY call tools that match the user's request:**
-   - User asks for "profile" → use GetAthleteProfile
-   - User asks for "activity", "run", "workout", "route", "map" → use GetActivityById or GetActivities
-   - User asks for "stats" → use GetAthleteStats
-   - DO NOT call GetAthleteProfile when user asks about activities
+1. **TWO-STEP PROCESS FOR MAPS - ALWAYS REQUIRED:**
+   When user asks for ANY activity details (with or without explicitly mentioning "map"):
+   - Step 1: ALWAYS call GetActivities first to find the activity
+   - Step 2: ALWAYS call GetActivityById with the activity ID from step 1
+   - GetActivities NEVER includes maps - you MUST call GetActivityById to get the map
+   - NEVER skip step 2, even if GetActivities returns data
+   - Examples:
+     * "show my last run" → GetActivities → GetActivityById
+     * "show my last run with map" → GetActivities → GetActivityById
+     * "details of my last activity" → GetActivities → GetActivityById
 
-2. **MARKDOWN IMAGE FORMAT - EXTREMELY IMPORTANT:**
-   When a tool returns a map URL or image URL, you MUST format it as Markdown image:
+2. **COPY TOOL OUTPUT EXACTLY - CRITICAL:**
+   When GetActivityById returns ![Route Map](https://...), you MUST:
+   - Copy that EXACT line into your response
+   - DO NOT explain "you can view the map"
+   - DO NOT say "use a mapping service"
+   - DO NOT convert to a link
+   - JUST COPY THE ![Route Map](...) LINE AS-IS
    
-   ✅ CORRECT FORMAT:
-   ![Route Map](https://maps.googleapis.com/maps/api/staticmap?...)
-   
-   ❌ WRONG - DO NOT DO THIS:
-   The map is available [here](https://maps.googleapis.com/...)
-   
-   ✅ CORRECT EXAMPLE:
-   "Tu medio maratón del 2 de noviembre:
-   
-   ![Route Map](https://maps.googleapis.com/maps/api/staticmap?size=600x400&path=enc:q{d}Bn|bvR...&key=...)
-   
-   - Distancia: 31.02 km
-   - Tiempo: 174 minutos"
-   
-   The ![...](...) syntax makes the image render in the UI. Links [here](...) do NOT render images.
+   ✅ CORRECT: Copy ![Route Map](https://maps.googleapis.com/...) exactly
+   ❌ WRONG: "To view the map, you can use..."
 
-3. **PRESERVE TOOL OUTPUT IMAGES:**
-   If a tool returns ![Photo](URL) or ![Map](URL), copy it EXACTLY to your response.
-   DO NOT convert it to a link or plain text.
+3. **TOOL SELECTION - CRITICAL:**
+   - Profile → GetAthleteProfile
+   - Stats → GetAthleteStats
+   - List of multiple activities → GetActivities only
+   - ANY single activity details → GetActivities THEN GetActivityById (BOTH required)
+   - NEVER use GetActivityById without GetActivities first
+   - NEVER stop after GetActivities if user asks for a specific activity
 
 4. **USE ADVANCED TOOLS EFFICIENTLY:**
    - For complex multi-step analysis: Use Think tool ONCE at the start to plan, then execute
-   - For data analysis: Get data first with Strava tools, THEN use Python tool once
    - AVOID calling Think tool multiple times - plan everything in one Think call
-   - Examples:
-     * "Analyze my training trend" → Think (plan) → GetActivities → Python (analyze)
-     * "Create a chart" → GetActivities → Python (create chart)
-     * "Compare activities" → GetActivities → Python (compare)
-   - Maximum recommended: 1 Think + 1-2 Strava tools + 1 Python = 3-4 tool calls total
+   - Maximum recommended: 1 Think + 1-2 Strava tools = 2-3 tool calls total
 
 5. **ALWAYS USE MARKDOWN TABLES FOR DATA - EXTREMELY IMPORTANT:**
    When presenting multiple data points, activities, or comparisons, ALWAYS use Markdown tables.
@@ -107,10 +103,9 @@ Your capabilities include:
 
 6. **EFFICIENCY RULES - CRITICAL:**
    - For simple queries (1-5 activities): Just use GetActivities and format as table
-   - For analysis without charts: Use GetActivities + format data in your response
-   - For charts/graphs: Use GetActivities + Python tool (2 tools max)
-   - For complex analysis: Think (once) + GetActivities + Python (3 tools max)
-   - If you can answer with data formatting alone, DON'T use Python tool
+   - For analysis: Use GetActivities + format data in your response
+   - For complex analysis: Think (once) + GetActivities (2 tools max)
+   - If you can answer with data formatting alone, just format it
    - NEVER call the same tool twice in one response
 
 When responding:
@@ -130,7 +125,6 @@ Remember: ![Image](url) renders an image, [link](url) does not!"""
 AGENT_DETAIL = AgentDetail(
     interaction_mode="multi-turn",
     user_greeting="Hello! I'm your Strava AI assistant. I can help you analyze your activities, explore segments, check your stats, and much more! 🏃‍♂️🚴‍♀️",
-    version="1.0.0",
     framework="BeeAI",
     author={"name": "Edgar Bruney"},
     tools=[
@@ -151,7 +145,6 @@ AGENT_DETAIL = AgentDetail(
         AgentDetailTool(name="GetRouteById", description="Get detailed route information"),
         AgentDetailTool(name="GetAthleteRoutes", description="Get athlete's saved routes"),
         AgentDetailTool(name="Think", description="Break down complex problems into steps for better reasoning"),
-        AgentDetailTool(name="Python", description="Execute Python code for data analysis and visualizations"),
     ],
 )
 
@@ -219,15 +212,15 @@ AGENT_SKILLS = [
 server = Server()
 
 
-def create_strava_agent(model_id: str = "meta-llama/llama-3-3-70b-instruct"):
+def create_strava_agent(model_id: str = "mistralai/mistral-small-3-1-24b-instruct-2503"):
     """
     Create a Strava ReAct agent with custom tools.
     
     Args:
         model_id: LLM model ID to use
-            - Default: "meta-llama/llama-3-3-70b-instruct" (IBM Watsonx - Active)
-            - Alternative: "ibm/granite-3-8b-instruct", "meta-llama/llama-3-1-70b-instruct"
-            - Gemini (quota exceeded): "gemini:gemini-2.0-flash-exp"
+            - Default: "mistralai/mistral-small-3-1-24b-instruct-2503" (IBM Watsonx)
+            - Alternative: "meta-llama/llama-3-3-70b-instruct"
+            - Alternative: "ibm/granite-3-8b-instruct"
         
     Returns:
         Configured ReActAgent instance
@@ -246,55 +239,16 @@ def create_strava_agent(model_id: str = "meta-llama/llama-3-3-70b-instruct"):
         model_id=model_id,
         parameters=llm_params
     )
-    
-    # Option 2: Google Gemini (Quota exceeded - commented out)
-    # Requires: GEMINI_API_KEY in .env
-    # from beeai_framework.backend import ChatModel
-    # llm = ChatModel.from_name(
-    #     "gemini:gemini-2.0-flash-exp",
-    #     parameters=llm_params
-    # )
+    print(f"✅ Using IBM Watsonx model: {model_id}")
     
     # Create custom Strava tools
     strava_tools = create_strava_tools()
     
     # Add BeeAI native tools for enhanced capabilities
     think_tool = ThinkTool()
+    all_tools = strava_tools + [think_tool]
     
-    # Python tool - requires code interpreter setup
-    # Check if code interpreter URL is configured
-    code_interpreter_url = os.getenv("CODE_INTERPRETER_URL")
-    
-    if code_interpreter_url:
-        try:
-            from beeai_framework.tools.code.storage import LocalPythonStorage
-            
-            # Setup storage directories
-            local_dir = os.getenv("CODE_STORAGE_PATH", "./code_storage")
-            interpreter_dir = os.getenv("CODE_INTERPRETER_DIR", "/tmp/code_storage")
-            
-            # Create local directory if it doesn't exist
-            os.makedirs(local_dir, exist_ok=True)
-            
-            storage = LocalPythonStorage(
-                local_working_dir=local_dir,
-                interpreter_working_dir=interpreter_dir
-            )
-            python_tool = PythonTool(
-                code_interpreter_url=code_interpreter_url,
-                storage=storage
-            )
-            all_tools = strava_tools + [think_tool, python_tool]
-            print("✅ Python tool initialized successfully")
-        except Exception as e:
-            print(f"⚠️  Warning: Could not initialize Python tool: {e}")
-            print("   Continuing with Think tool only...")
-            all_tools = strava_tools + [think_tool]
-    else:
-        print("ℹ️  Python tool not configured (CODE_INTERPRETER_URL not set)")
-        print("   To enable Python tool, set CODE_INTERPRETER_URL in .env")
-        print("   Continuing with Think tool only...")
-        all_tools = strava_tools + [think_tool]
+    print("✅ Strava tools and Think tool initialized successfully")
     
     # Initialize ReAct agent
     agent = ReActAgent(

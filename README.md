@@ -82,13 +82,10 @@ dependencies = [
 The agent uses the following BeeAI tools:
 
 - **Custom Tools:** Direct implementation of Strava API (16 tools)
-- **Think Tool:** 🆕 Enhanced reasoning for complex analysis
-- **Python Tool:** 🆕 Data analysis and visualizations (optional)
+- **Think Tool:** Enhanced reasoning for complex analysis
 - **ReActAgent:** Reasoning and action agent
 - **UnconstrainedMemory:** Unrestricted memory for full context
-- **WatsonxChatModel:** IBM Granite language model
-
-📖 **For advanced tools setup and usage, see [ADVANCED_TOOLS_GUIDE.md](ADVANCED_TOOLS_GUIDE.md)**
+- **WatsonxChatModel:** IBM Watsonx language model
 
 ## 🚀 Installation
 
@@ -174,7 +171,7 @@ curl -X POST http://127.0.0.1:8000/a2a \
 
 ## 📝 Example Queries - Maximize Your Agent's Potential
 
-The agent now includes **Think Tool** for complex reasoning and **Python Tool** for data analysis and visualizations. Here are examples organized by complexity level:
+The agent includes **Think Tool** for complex reasoning and analysis. Here are examples organized by complexity level:
 
 ### 📊 Level 1: Basic Queries (Strava Tools Only)
 
@@ -208,27 +205,11 @@ The agent now includes **Think Tool** for complex reasoning and **Python Tool** 
 "How does my heart rate vary across different activity types?"
 ```
 
-### 🐍 Level 3: Advanced Analysis (Python Tool)
-
-**Visualizations:**
-```
-"Create a chart showing my pace improvement over the last 30 days"
-"Generate a bar chart of my weekly mileage for the last month"
-"Show me a histogram of my heart rate zone distribution"
-```
-
-**Statistical Analysis:**
-```
-"Calculate the correlation between my distance and average heart rate"
-"Compare statistically my 5km runs vs 10km runs: pace, HR, and cadence"
-"Analyze how my performance varies by day of the week with graphs"
-```
-
-### 🎯 Level 4: Multi-Dimensional Analysis
+### 🎯 Level 3: Multi-Dimensional Analysis
 
 **Progress Tracking:**
 ```
-"Analyze my progress over the last 3 months: create tables and charts showing
+"Analyze my progress over the last 3 months: show tables with
 evolution of distance, pace, and heart rate"
 
 "Calculate my training efficiency: relationship between distance, time, and
@@ -237,15 +218,15 @@ heart rate in my last 20 runs"
 
 **Zone Analysis:**
 ```
-"Show which HR zones I've trained in most this month and create a visualization"
+"Show which HR zones I've trained in most this month"
 "Analyze my training load distribution and show if I'm at risk of overtraining"
 ```
 
-### 🏆 Level 5: Predictive Analysis
+### 🏆 Level 4: Predictive Analysis
 
 **Predictions:**
 ```
-"Based on my progress over the last 2 months, predict when I could run 10km
+"Based on my progress over the last 2 months, estimate when I could run 10km
 in under 45 minutes"
 
 "Analyze all my data and recommend the best training plan to improve my
@@ -265,13 +246,13 @@ half marathon time"
 [Action] + [Specific Data] + [Time Period] + [Format] + [Analysis]
 
 Example:
-"Compare my last 15 runs from the last month in a table and chart
+"Compare my last 15 runs from the last month in a table
 and tell me if I'm improving"
 ```
 
 **Best Practices:**
 1. **Be specific with time:** "last 2 weeks" vs "my runs"
-2. **Request visualizations:** "with charts and tables"
+2. **Request tables:** "show in a table format"
 3. **Combine metrics:** "pace, HR, and cadence"
 4. **Ask for analysis:** "and tell me what I should improve"
 
@@ -280,18 +261,18 @@ and tell me if I'm improving"
 **Preparing for a Race:**
 ```
 "Analyze my last 3 months of training and tell me if I'm ready for a half marathon.
-Show progress tables, trend charts, and give specific recommendations."
+Show progress in tables and give specific recommendations."
 ```
 
 **Identifying Issues:**
 ```
 "Compare my runs from this month with last month. Identify any performance
-decline and suggest possible causes with data and charts."
+decline and suggest possible causes with detailed data."
 ```
 
 **Goal Tracking:**
 ```
-"My goal is to run 200km this month. Show my current progress in a table and chart,
+"My goal is to run 200km this month. Show my current progress in a table,
 calculate how much I need to run per week to achieve it."
 ```
 
@@ -401,7 +382,7 @@ graph TB
     
     subgraph BeeAI["🤖 BeeAI Agent"]
         C[ReAct Agent<br/>Reasoning]
-        D[LLM Model<br/>Watsonx/Gemini]
+        D[LLM Model<br/>Watsonx]
         E{Tool Selection}
     end
     
@@ -430,7 +411,7 @@ graph TB
     
     subgraph Visual["🖼️ Visual Resources"]
         J1[Profile Photos<br/>Strava CDN]
-        J2[Route Maps<br/>Google Maps]
+        J2[Route Maps<br/>Strava Polylines]
         J3[Club Photos<br/>Strava CDN]
     end
     
@@ -524,31 +505,15 @@ The agent can analyze:
 
 ### Change the LLM Model
 
-The agent uses `meta-llama/llama-3-3-70b-instruct` by default. You can change the model during initialization:
+The agent uses `meta-llama/llama-3-3-70b-instruct` by default. You can change the model in the `create_strava_agent()` function in `src/beeai_agents/agent.py`:
 
 ```python
 # Default model (recommended)
-agent = StravaAgent()  # uses llama-3-3-70b-instruct
+agent = create_strava_agent()  # uses llama-3-3-70b-instruct
 
 # Other compatible models
-agent = StravaAgent(model_id="meta-llama/llama-3-1-70b-instruct")
-agent = StravaAgent(model_id="ibm/granite-3-8b-instruct")
-```
-
-### Modify Queries
-
-Edit the `main()` function in `src/beeai_agents/agent.py`:
-
-```python
-async def main():
-    agent = StravaAgent()
-    await agent.initialize()
-    
-    # Your custom query
-    query = "Your question here"
-    await agent.run(query)
-    
-    await agent.cleanup()
+agent = create_strava_agent(model_id="meta-llama/llama-3-1-70b-instruct")
+agent = create_strava_agent(model_id="ibm/granite-3-8b-instruct")
 ```
 
 ## 🐛 Troubleshooting
@@ -595,8 +560,7 @@ For a detailed troubleshooting guide, see [TROUBLESHOOTING.md](TROUBLESHOOTING.m
 - [Strava Getting Started Guide](https://developers.strava.com/docs/getting-started/)
 - [API Coverage Analysis](STRAVA_API_COVERAGE.md) - Detailed comparison with official API
 - [A2A Usage Guide](A2A_USAGE.md) - Complete A2A protocol documentation
-- [Advanced Tools Guide](ADVANCED_TOOLS_GUIDE.md) - 🆕 Think & Python tools setup and usage
-- [Example Prompts](EXAMPLE_PROMPTS.md) - 🆕 Powerful prompts to maximize agent capabilities
+- [Example Prompts](EXAMPLE_PROMPTS.md) - Powerful prompts to maximize agent capabilities
 - [Troubleshooting Guide](TROUBLESHOOTING.md) - Common issues and solutions
 
 ### Visual Resources 🖼️

@@ -322,7 +322,6 @@ Returns: list of activities with name, type, distance, time, date, etc."""
                 
                 result += f"{i}. {activity.get('name', 'Unnamed')}\n"
                 result += f"   - Type: {activity.get('type', 'N/A')}\n"
-                result += f"   - ID: {activity.get('id')}\n"
                 result += f"   - Distance: {distance_km:.2f} km\n"
                 result += f"   - Time: {time_min:.0f} min\n"
                 result += f"   - Date: {activity.get('start_date_local', 'N/A')}\n"
