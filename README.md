@@ -1,5 +1,7 @@
 # 🏃‍♂️ Complete Strava Agent with BeeAI 🚴‍♀️
 
+![Strava + BeeAI](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*_5wsH-MMQcn7Be4psYbB5Q.png)
+
 ## Introduction
 
 The Strava Agent is an advanced conversational AI system designed to interact with the complete Strava API. Built on the BeeAI framework with the AgentStack SDK, this agent allows you to analyze your athletic performance, explore segments, manage routes, interact with clubs, and much more through natural conversations.
@@ -209,6 +211,12 @@ The agent will start and execute an example query. You can modify the query in `
 # Power analysis
 "Show me the power data from my last workout"
 ```
+
+<div align="center">
+
+![Strava Agent Demo](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*ipKOi76xXh0OM0OdUHARYQ.gif)
+
+</div>
 
 ## 🔧 Strava API - Available Endpoints
 
