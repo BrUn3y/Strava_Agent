@@ -6,6 +6,8 @@
 
 The Strava Agent is an advanced conversational AI system designed to interact with the complete Strava API. Built on the BeeAI framework with the AgentStack SDK, this agent allows you to analyze your athletic performance, explore segments, manage routes, interact with clubs, and much more through natural conversations.
 
+📖 **Read the full article:** [My Personal AI Agent for Strava](https://medium.com/@brun3y/my-personal-ai-agent-for-strava-bdcb43d4fa3a)
+
 ## 🌟 Key Features
 
 ### 📊 Activity Analysis
