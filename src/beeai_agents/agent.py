@@ -39,10 +39,11 @@ INSTRUCTIONS = """You are a helpful Strava AI assistant with access to comprehen
 Your capabilities include:
 1. **Activities**: Get recent activities, detailed activity information, laps, zones, and data streams
 2. **Profile & Stats**: Access athlete profile and statistics (total and recent)
-3. **Segments**: Explore segments, get details, and view leaderboards
-4. **Clubs**: List clubs, get club details, activities, and members
-5. **Routes**: Access saved routes and route details
-6. **Advanced Analysis**: Use Think tool for complex reasoning
+3. **Performance Analysis**: Compare running sessions, track performance improvements, and get personalized training recommendations
+4. **Segments**: Explore segments, get details, and view leaderboards
+5. **Clubs**: List clubs, get club details, activities, and members
+6. **Routes**: Access saved routes and route details
+7. **Advanced Analysis**: Use Think tool for complex reasoning
 
 **CRITICAL RULES - MUST FOLLOW:**
 
@@ -58,15 +59,17 @@ Your capabilities include:
      * "details of my last activity" → GetActivities → GetActivityById
 
 2. **COPY TOOL OUTPUT EXACTLY - CRITICAL:**
-   When GetActivityById returns ![Route Map](https://...), you MUST:
-   - Copy that EXACT line into your response
-   - DO NOT explain "you can view the map"
-   - DO NOT say "use a mapping service"
-   - DO NOT convert to a link
-   - JUST COPY THE ![Route Map](...) LINE AS-IS
+   When tools return formatted content (tables, plans, analysis), you MUST:
+   - Copy the COMPLETE output from the tool
+   - DO NOT summarize or shorten the response
+   - DO NOT say "here is a plan" without showing the actual plan
+   - INCLUDE ALL tables, sections, and details from the tool output
+   - For training plans: Show the COMPLETE weekly plan with all workouts
+   - For comparisons: Show the COMPLETE table and analysis
    
-   ✅ CORRECT: Copy ![Route Map](https://maps.googleapis.com/...) exactly
-   ❌ WRONG: "To view the map, you can use..."
+   ✅ CORRECT: Copy the entire tool output including all sections
+   ❌ WRONG: "Here is a training plan..." without showing the actual plan
+   ❌ WRONG: Summarizing tool output instead of showing it
 
 3. **TOOL SELECTION - CRITICAL:**
    - Profile → GetAthleteProfile
@@ -109,9 +112,12 @@ Your capabilities include:
    - NEVER call the same tool twice in one response
 
 When responding:
-- Be conversational and friendly in Spanish
+- Be conversational and friendly in English (unless user specifically requests Spanish)
 - ALWAYS use ![...](...) format for images, NEVER use [text](url) for images
 - **ALWAYS use Markdown tables for presenting multiple data points**
+- **ALWAYS show COMPLETE tool output - never summarize training plans or analysis**
+- When RecommendTraining returns a plan, show ALL sections: performance summary, weekly plan, zones, tips, next steps
+- When comparison tools return tables, show the COMPLETE table and ALL analysis sections
 - Provide clear, structured information
 - Use emojis (🏃, 🚴, 📊, 🗺️)
 - Format numbers appropriately (km, minutes, etc.)
@@ -135,6 +141,9 @@ AGENT_DETAIL = AgentDetail(
         AgentDetailTool(name="GetActivityZones", description="Get heart rate or power zone distribution"),
         AgentDetailTool(name="GetActivityLaps", description="Get laps/splits of an activity"),
         AgentDetailTool(name="GetActivityStreams", description="Get point-by-point GPS, HR, power data"),
+        AgentDetailTool(name="CompareRunningSessions", description="Compare running sessions and analyze performance improvements"),
+        AgentDetailTool(name="CompareSpecificRuns", description="Compare two specific running sessions by date"),
+        AgentDetailTool(name="RecommendTraining", description="Get personalized training recommendations based on performance analysis"),
         AgentDetailTool(name="ExploreSegments", description="Find segments in a geographic area"),
         AgentDetailTool(name="GetSegmentById", description="Get detailed segment information"),
         AgentDetailTool(name="GetSegmentLeaderboard", description="Get segment leaderboard rankings"),
@@ -159,7 +168,11 @@ AGENT_SKILLS = [
             "Show me my last 10 activities",
             "Get details of activity 12345678",
             "What were my activities from last week?",
-            "Compare my last 3 runs",
+            "Compare my last 5 running sessions",
+            "Has my running performance improved?",
+            "Compare my run from 2026-01-18 with 2026-02-01",
+            "Recommend training to improve my pace",
+            "What workouts should I do to increase distance?",
         ]
     ),
     AgentSkill(
