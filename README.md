@@ -20,6 +20,8 @@ The Strava Agent is an advanced conversational AI system designed to interact wi
 - Analyze laps/splits and training zones
 - View kudos and activity comments
 - Update activity information
+- **🆕 Compare running sessions and track performance improvements**
+- **🆕 Get personalized training recommendations to improve performance**
 
 ### 👤 Profile Management
 - Query complete athlete profile
@@ -187,6 +189,20 @@ The agent includes **Think Tool** for complex reasoning and analysis. Here are e
 "Show my total running statistics"
 "What's my biggest ride distance?"
 "Display my cycling stats for this year"
+```
+
+**🆕 Performance Comparison:**
+```
+"Compare my last 5 running sessions"
+"Has my running performance improved?"
+"Analyze my progress in the last 10 runs"
+```
+
+**🆕 Training Recommendations:**
+```
+"Recommend training to improve my pace"
+"What workouts should I do to increase distance?"
+"Give me a training plan to build endurance"
 ```
 
 ### 🧠 Level 2: Smart Analysis (Think Tool)
@@ -562,6 +578,7 @@ For a detailed troubleshooting guide, see [TROUBLESHOOTING.md](TROUBLESHOOTING.m
 - [A2A Usage Guide](A2A_USAGE.md) - Complete A2A protocol documentation
 - [Example Prompts](EXAMPLE_PROMPTS.md) - Powerful prompts to maximize agent capabilities
 - [Troubleshooting Guide](TROUBLESHOOTING.md) - Common issues and solutions
+- [🆕 Performance Comparison Guide](PERFORMANCE_COMPARISON_GUIDE.md) - **How to compare running sessions and track improvements**
 
 ### Visual Resources 🖼️
 - [Visual Setup Guide](VISUAL_SETUP_GUIDE.md) - **How to enable maps and photos in UI**
@@ -613,7 +630,7 @@ This implementation uses **custom BeeAI tools** instead of OpenAPI tools because
 4. ✅ **Full control** - Custom error handling and formatting
 5. ✅ **Easier to extend** - Add new tools easily
 
-### 16 Custom Tools Implemented
+### 19 Custom Tools Implemented
 
 **Profile & Stats (2)**
 - GetAthleteProfile
@@ -625,6 +642,11 @@ This implementation uses **custom BeeAI tools** instead of OpenAPI tools because
 - GetActivityZones
 - GetActivityLaps
 - GetActivityStreams
+
+**🆕 Performance Analysis (3)**
+- CompareRunningSessions
+- CompareSpecificRuns
+- RecommendTraining
 
 **Segments (3)**
 - ExploreSegments

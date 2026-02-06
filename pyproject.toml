@@ -10,7 +10,7 @@ authors = [
 requires-python = ">=3.11,<4.0"
 dependencies = [
     "agentstack-sdk==0.4.0rc1",
-    "beeai_framework>=0.1.68",
+    "beeai_framework>=0.1.76",
     "requests>=2.31.0",
     "python-dotenv>=1.0.0",
 ]

@@ -217,14 +217,14 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "agentstack-sdk", specifier = "==0.4.0rc1" },
-    { name = "beeai-framework", specifier = ">=0.1.68" },
+    { name = "beeai-framework", specifier = ">=0.1.76" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "requests", specifier = ">=2.31.0" },
 ]
 
 [[package]]
 name = "beeai-framework"
-version = "0.1.68"
+version = "0.1.76"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -238,9 +238,9 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/13/09/273332fd7bfae65b8cc555ab71007015ed5faa8f009d1138891d930136e8/beeai_framework-0.1.68.tar.gz", hash = "sha256:9a95c62b167196e992b9af0201f417d88db348c02cb6ae213608816a66b30369", size = 180637, upload-time = "2025-11-19T17:21:23.427Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/62/9d0b1bf0c583e8b97ac208530140f77a26a4696faf6d67a6d67005eb6287/beeai_framework-0.1.76.tar.gz", hash = "sha256:adc188bcf9e98fff3d8583acdddf6a248f61a08677877f1abbd4f4b16645b0cc", size = 191628, upload-time = "2026-01-20T10:37:01.878Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/35/b8/70c5868dd6441fae444bec7fca20b4e24a740714af42bf80478961ec078a/beeai_framework-0.1.68-py3-none-any.whl", hash = "sha256:2243044af896b0a4b2c666da9b549a2f00b264089f9debf797cd0bba6129ac40", size = 333809, upload-time = "2025-11-19T17:21:22.242Z" },
+    { url = "https://files.pythonhosted.org/packages/d9/52/b173e81fb6db6a42cfde1062a5d3f243d348c8080b7e6014f73a9c65f186/beeai_framework-0.1.76-py3-none-any.whl", hash = "sha256:38afbc0b3ebe090d63c4b9257103cb41c5421c10af2056261fff890fe357cdd8", size = 352647, upload-time = "2026-01-20T10:37:00.24Z" },
 ]
 
 [[package]]
@@ -782,7 +782,7 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.80.5"
+version = "1.81.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -798,9 +798,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "tokenizers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/85/b8/357544534bef87dd2858432f3cbd3a0e5cc267caebca5ea86b03618786c5/litellm-1.80.5.tar.gz", hash = "sha256:922791c264845d9ed59e540c8fa74a74d237c1b209568a05ffeacd8b51770deb", size = 11885764, upload-time = "2025-11-22T23:41:42.25Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/eb/1d/e8f95dd1fc0eed36f2698ca82d8a0693d5388c6f2f1718f3f5ed472daaf4/litellm-1.81.8.tar.gz", hash = "sha256:5cc6547697748b8ca38d17d755662871da125df6e378cc987eaf2208a15626fb", size = 14066801, upload-time = "2026-02-05T05:56:03.37Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bd/af/1d4693746ff9fbbe27a6e7d6394b801acf234e00c83f45ad1cb5bf2eaa6c/litellm-1.80.5-py3-none-any.whl", hash = "sha256:2ac5f4e88cd57ae056e00da8f872e1c2956653750929fba2fd9b007b400fdb77", size = 10671970, upload-time = "2025-11-22T23:41:39.923Z" },
+    { url = "https://files.pythonhosted.org/packages/d8/5a/6f391c2f251553dae98b6edca31c070d7e2291cef6153ae69e0688159093/litellm-1.81.8-py3-none-any.whl", hash = "sha256:78cca92f36bc6c267c191d1fe1e2630c812bff6daec32c58cade75748c2692f6", size = 12286316, upload-time = "2026-02-05T05:56:00.248Z" },
 ]
 
 [[package]]
